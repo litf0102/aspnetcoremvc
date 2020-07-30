@@ -1,0 +1,351 @@
+﻿@{
+    ViewBag.CurrentMenu = "User";
+}
+<div class="row">
+
+    <div class="col-md-12">
+        <div class="box box-primary">
+            <div class="box-header with-border">
+                <h3 class="box-title">ユーザ管理</h3>
+                <div class="pull-right box-tools">
+                    <button id="btnAdd" class="btn btn-primary" type="button" data-original-title="ユーザ追加" data-toggle="tooltip" data-widget="">
+                        <i class="fa fa-plus-square">追加</i>
+                    </button>
+                    <button id="btnDelete" title="" class="btn btn-danger" type="button" data-original-title="ユーザ削除" data-toggle="tooltip" data-widget="">
+                        <i class="fa fa-times"></i>削除
+                    </button>
+                </div>
+            </div>
+            <div class="box-body">
+                <div class="form-group">
+                    <label class="col-sm-4 control-label" for="">事業者コード</label>
+                    <div class="col-sm-2">
+                        <select id="Department" class="form-control" style="padding:0px">
+                        </select>
+                    </div>
+                </div>
+                <br />
+                <div class="table-scrollable">
+                    <table class="table table-striped table-bordered table-hover dataTable no-footer" role="grid" aria-describedby="sample_2_info">
+                        <thead>
+                            <tr role="row">
+                                <th class="table-checkbox" style="width:40px;text-align:center;"><input id="checkAll" class="group-checkable" type="checkbox"></th>
+                                <th tabindex="0" aria-label="">
+                                    ユーザID
+                                </th>
+                                <th tabindex="0" aria-label="">
+                                    ユーザ名称
+                                </th>
+                                <th tabindex="0" aria-label="">
+                                    メール
+                                </th>
+                                <th tabindex="0" aria-label="">
+                                    携帯電話
+                                </th>
+                                <th tabindex="0" style="width: 115px;" aria-label="">
+                                    メモ
+                                </th>
+                                <th tabindex="0" style="width: 230px;" aria-label="">
+                                    操作
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                    <div class="paging-toolbar">
+                        <ul id="grid_paging_part"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="editModal" tabindex="-1" class="modal fade in" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="box box-info">
+            <div class="box-header with-border">
+                <h5 class="box-title" id="Title"></h5>
+                <button class="close" aria-label="Close" type="button" data-dismiss="modal">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <form class="form-horizontal">
+                <input type="hidden" id="Id" />
+                <div class="box-body">
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label" for="inputPassword3">ユーザID</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="UserName" type="text" placeholder="ユーザID">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label" for="">パスワード</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="Password" type="password" placeholder="パスワード">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" for="">姓名</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="Name" type="text">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" for="">メール</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="Email" type="text">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label" for="">携帯電話</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="MobileNumber" type="text">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label" for="">役割担当</label>
+                        <div class="col-sm-10">
+                            <select id="Role" class="form-control" style="padding:0px" multiple="multiple">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-2 control-label" for="">説明</label>
+                        <div class="col-sm-10">
+                            <textarea id="Remarks" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="box-footer">
+                    <div class="pull-right box-tools">
+                        <button id="btnSave" class="btn btn-primary" type="button">保存</button>
+                        <button class="btn btn-default" type="button" data-dismiss="modal">キャンセル</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        var selectedId = "C882A4D1-0518-4E4C-ABBC-F9403E64F8FD";
+        $(function () {
+            //$("#Department").change(function () { selectChange(); });
+            $("#btnAdd").click(function () { add(); });
+            $("#btnSave").click(function () { save(); });
+            $("#btnDelete").click(function () { deleteMulti(); });
+            $("#checkAll").click(function () { checkAll(this) });
+            loadDept();
+            loadTables(1, 10);
+        });
+        //部門切り替え
+        function selectChange() {
+            selectedId = $("#Department").val().toString();
+            alert(selectedId);
+            loadTables(1, 10);
+        };
+        //部門一覧取得
+        function loadDept() {
+            $.ajax({
+                type: "GET",
+                dataType: "JSON",
+                url: "/Department/GetAllData",
+                success: function (data) {
+                    //alert(data);
+                    $("#Department").select2();
+                    var option = "";
+                    for (var i = 0; i < data.length; i++) {
+                        if (i == 0) {
+                            option += "<option value='" + data[i].id + "' selected>" + data[i].code + "</option>";
+                        } else {
+                            option += "<option value='" + data[i].id + "'>" + data[i].code + "</option>";
+                        }
+                    }
+                    $("#Department").html(option);
+                },
+                complete: function () {
+                    // データ表示処理を実行する
+                    //alert("Request end.");
+                },
+                error: function () {
+                    alert("ERROR!!!");
+                }
+            });
+        };
+        //追加
+        function add() {
+            $("#Id").val("00000000-0000-0000-0000-000000000000");
+            $("#UserName").val("");
+            $("#Password").val("");
+            $("#Name").val("");
+            $("#EMail").val("");
+            $("#MobileNumber").val("");
+            $("#Remarks").val("");
+            $("#Role").select2("val", "");
+            $("#Title").text("新規ユーザ");
+            //Popup Window
+            $("#editModal").modal("show");
+        };
+        //全て選択
+        function checkAll(obj) {
+            $(".checkboxs").each(function () {
+                if (obj.checked == true) {
+                    $(this).prop("checked", true)
+
+                }
+                if (obj.checked == false) {
+                    $(this).prop("checked", false)
+                }
+            });
+        };
+        //ユーザ一覧取得
+        function loadTables(startPage, pageSize) {
+            $("#tableBody").html("");
+            $("#checkAll").prop("checked", false);
+            //selectedId = $("#Department").val().toString();
+            //alert(selectedId);
+            $.ajax({
+                type: "GET",
+                url: "/User/GetUserByDepartment?startPage=" + startPage + "&pageSize=" + pageSize + "&departmentId=" + selectedId + "&_t=" + new Date().getTime(),
+                success: function (data) {
+                    $.each(data.rows, function (i, item) {
+                        var tr = "<tr>";
+                        tr += "<td align='center'><input type='checkbox' class='checkboxs' value='" + item.id + "'/></td>";
+                        tr += "<td>" + item.userName + "</td>";
+                        tr += "<td>" + (item.name == null ? "" : item.name) + "</td>";
+                        tr += "<td>" + (item.email == null ? "" : item.email) + "</td>";
+                        tr += "<td>" + (item.mobileNumber == null ? "" : item.mobileNumber) + "</td>";
+                        tr += "<td>" + (item.remarks == null ? "" : item.remarks) + "</td>";
+                        tr += "<td><button class='btn btn-info btn-xs' href='javascript:;' onclick='edit(\"" + item.id + "\")'><i class='fa fa-edit'></i> 変更 </button> <button class='btn btn-danger btn-xs' href='javascript:;' onclick='deleteSingle(\"" + item.id + "\")'><i class='fa fa-trash-o'></i> 削除 </button> </td>"
+                        tr += "</tr>";
+                        $("#tableBody").append(tr);
+                    })
+                    var elment = $("#grid_paging_part"); //分页插件的容器id
+                    if (data.rowCount > 0) {
+                        var options = { //分页插件配置项
+                            bootstrapMajorVersion: 3,
+                            currentPage: startPage, //当前页
+                            numberOfPages: data.rowsCount, //总数
+                            totalPages: data.pageCount, //总页数
+                            onPageChanged: function (event, oldPage, newPage) { //页面切换事件
+                                loadTables(newPage, pageSize);
+                            }
+                        }
+                        elment.bootstrapPaginator(options); //分页插件初始化
+                    }
+                    loadRoles(data);
+                }
+            })
+        };
+        function loadRoles(data) {
+            $("#Role").select2();
+            var option = "";
+            $.each(data.roles, function (i, item) {
+                option += "<option value='" + item.id + "'>" + item.name + "</option>"
+            })
+            $("#Role").html(option);
+        };
+        //編集
+        function edit(id) {
+            $.ajax({
+                type: "Get",
+                url: "/User/Get?id=" + id + "&_t=" + new Date().getTime(),
+                success: function (data) {
+                    $("#Id").val(data.id);
+                    $("#UserName").val(data.userName);
+                    $("#Password").val(data.password);
+                    $("#Name").val(data.name);
+                    $("#EMail").val(data.eMail);
+                    $("#mobileNumber").val(data.mobileNumber);
+                    $("#Remarks").val(data.remarks);
+                    var roleIds = [];
+                    if (data.userRoles) {
+                        $.each(data.userRoles, function (i, item) {
+                            roleIds.push(item.roleId)
+                        });
+                        $("#Role").select2("val", roleIds);
+                    }
+                    $("#Title").text("ユーザ変更")
+                    $("#editModal").modal("show");
+                }
+            })
+        };
+        //保存
+        function save() {
+            var roles = "";
+            if ($("#Role").val())
+                roles = $("#Role").val().toString();
+            var postData = { "dto": { "Id": $("#Id").val(), "UserName": $("#UserName").val(), "Password": $("#Password").val(), "Name": $("#Name").val(), "EMail": $("#EMail").val(), "MobileNumber": $("#MobileNumber").val(), "Remarks": $("#Remarks").val(), "DepartmentId": selectedId }, "roles": roles };
+            $.ajax({
+                type: "Post",
+                url: "/User/Edit",
+                data: postData,
+                success: function (data) {
+                    if (data.result == "Success") {
+                        loadTables(1, 10)
+                        $("#editModal").modal("hide");
+                    } else {
+                        layer.tips(data.message, "#btnSave");
+                    };
+                }
+            });
+        };
+        //一括削除
+        function deleteMulti() {
+            var ids = "";
+            $(".checkboxs").each(function () {
+                if ($(this).prop("checked") == true) {
+                    ids += $(this).val() + ","
+                }
+            });
+            ids = ids.substring(0, ids.length - 1);
+            if (ids.length == 0) {
+                layer.alert("削除対象を選択してください。");
+                return;
+            };
+            //確認ダイアログ
+            layer.confirm("削除しますか？", {
+                btn: ["OK", "Cancel"]
+            }, function () {
+                var sendData = { "ids": ids };
+                $.ajax({
+                    type: "Post",
+                    url: "/User/DeleteMuti",
+                    data: sendData,
+                    success: function (data) {
+                        if (data.result == "Success") {
+                            loadTables(1, 10)
+                            layer.closeAll();
+                        }
+                        else {
+                            layer.alert("削除に失敗しました。");
+                        }
+                    }
+                });
+            });
+        };
+        //単一レコードを削除
+        function deleteSingle(id) {
+            layer.confirm("削除しますか？", {
+                btn: ["OK", "Cancel"]
+            }, function () {
+                $.ajax({
+                    type: "POST",
+                    url: "/User/Delete",
+                    data: { "id": id },
+                    success: function (data) {
+                        if (data.result == "Success") {
+                            loadTables(1, 10)
+                            layer.closeAll();
+                        }
+                        else {
+                            layer.alert("削除に失敗しました。");
+                        }
+                    }
+                })
+            });
+        };
+
+    </script>
+}
